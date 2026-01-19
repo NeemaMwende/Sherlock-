@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import sql from "@/lib/db";
 import { Users, UserCheck, TrendingUp, Activity } from "lucide-react";
+import { RecentLogin, UserRow } from "@/types/db";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -29,12 +30,12 @@ export default async function AdminPage() {
     redirect("/dashboard");
   }
 
-  const users = await sql`
+  const users = (await sql`
     SELECT id, name, email, role, created_at, last_login 
     FROM users 
     ORDER BY created_at DESC
     LIMIT 10
-  `;
+  `) as UserRow[];
 
   const stats = await sql`
     SELECT 
@@ -45,13 +46,13 @@ export default async function AdminPage() {
     FROM users
   `;
 
-  const recentLogins = await sql`
+  const recentLogins = (await sql`
     SELECT name, email, last_login 
     FROM users 
     WHERE last_login IS NOT NULL 
     ORDER BY last_login DESC 
     LIMIT 5
-  `;
+  `) as RecentLogin[];
 
   return (
     <DashboardLayout
@@ -127,7 +128,7 @@ export default async function AdminPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentLogins.map((login: any, i: number) => (
+                {recentLogins.map((login, i) => (
                   <div
                     key={i}
                     className="flex items-center justify-between border-b pb-3 last:border-0"
@@ -192,7 +193,7 @@ export default async function AdminPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user: any) => (
+                {users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
