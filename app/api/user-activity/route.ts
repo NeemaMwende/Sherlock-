@@ -7,3 +7,9 @@ export default async function GET() {
   );
   return NextResponse.json(res.rows);
 }
+
+export async function DELETE(req: Request) {
+  const { id } = await req.json();
+  await client.query(`DELETE FROM "User" WHERE id=$1`, [id]);
+  return NextResponse.json({ success: true });
+}
