@@ -1,25 +1,32 @@
 import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+import Credentials from "next-auth/providers/credentials";
 import { client } from "@/lib/db";
-import { comparePassword } from "@/lib/password";
+import { verifyPassword } from "@/lib/password";
 
-export const authOptions = {
+const handler = NextAuth({
+  session: {
+    strategy: "database", // 👈 SESSION-BASED (not JWT)
+  },
   providers: [
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: { email: {}, password: {} },
+    Credentials({
+      credentials: {
+        email: {},
+        password: {},
+      },
       async authorize(credentials) {
-        const res = await client.query(`SELECT * FROM "User" WHERE email=$1`, [
-          credentials?.email,
-        ]);
-        const user = res.rows[0];
-        if (!user) throw new Error("User not found");
+        if (!credentials) return null;
 
-        const valid = await comparePassword(
-          credentials!.password,
-          user.password,
+        const res = await client.query(
+          `SELECT * FROM "User" WHERE email = $1`,
+          [credentials.email],
         );
-        if (!valid) throw new Error("Incorrect password");
+
+        const user = res.rows[0];
+        if (!user) return null;
+
+        const valid = await verifyPassword(credentials.password, user.password);
+
+        if (!valid) return null;
 
         return {
           id: user.id,
@@ -30,9 +37,15 @@ export const authOptions = {
       },
     }),
   ],
-  session: { strategy: "database" }, // session-based auth
-  secret: process.env.NEXTAUTH_SECRET,
-};
+  callbacks: {
+    session({ session, user }) {
+      if (session.user) {
+        session.user.id = user.id;
+        session.user.role = user.role;
+      }
+      return session;
+    },
+  },
+});
 
-const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

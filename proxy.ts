@@ -1,18 +1,32 @@
-import { NextRequest, NextResponse } from "next/server";
-import LRU from "lru-cache";
+import { getToken } from "next-auth/jwt";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-const rateLimitCache = new LRU({
-  max: 500,
-  ttl: 60 * 1000, // time to live: 1 minute
-});
+export async function proxy(req: NextRequest) {
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
 
-export function rateLimit(req: NextRequest) {
-  const ip = req.ip ?? "unknown";
-  const count = rateLimitCache.get(ip) ?? 0;
+  const { pathname } = req.nextUrl;
 
-  if (count >= 5)
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  // Protect all dashboard routes
+  if (pathname.startsWith("/dashboard")) {
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
 
-  rateLimitCache.set(ip, count + 1);
-  return null;
+    // Admin-only routes
+    if (pathname.startsWith("/dashboard/admin")) {
+      if (token.role !== "admin") {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+    }
+  }
+
+  return NextResponse.next();
 }
+
+export const config = {
+  matcher: ["/dashboard/:path*"],
+};
