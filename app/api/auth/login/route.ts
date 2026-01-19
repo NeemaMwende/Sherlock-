@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { pool } from "@/lib/db";
+import { client } from "@/lib/db";
 import { comparePassword } from "@/lib/password";
 import { loginSchema } from "@/lib/schemas/auth";
 import { signJwt } from "@/lib/jwt";
@@ -13,7 +13,9 @@ export async function POST(req: Request) {
 
   const { email, password } = parsed.data;
 
-  const res = await pool.query(`SELECT * FROM "User" WHERE email=$1`, [email]);
+  const res = await client.query(`SELECT * FROM "User" WHERE email=$1`, [
+    email,
+  ]);
   const user = res.rows[0];
   if (!user)
     return NextResponse.json({ error: "User not found" }, { status: 401 });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { pool } from "@/lib/db";
+import { client } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
 import { signupSchema } from "@/lib/schemas/auth";
 
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const { name, email, password } = parsed.data;
 
     //use of parameterized query to prevent SQL injection
-    const existing = await pool.query(
+    const existing = await client.query(
       `SELECT id FROM "User" WHERE email = $1`,
       [email],
     );
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     // Hash the password
     const hashedPassword = await hashPassword(password);
 
-    await pool.query(
+    await client.query(
       `INSERT INTO "User" (name, email, password) VALUES (gen_random_uuid(), $1, $2, $3)`,
       [name, email, hashedPassword],
     );
