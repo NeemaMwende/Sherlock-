@@ -2,6 +2,8 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import sql from "./db";
+import { headers } from "next/headers";
+import { loginRateLimit } from "./rate-limit";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -14,6 +16,26 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+        /* -------------------------------
+           1️⃣ Get client IP
+        -------------------------------- */
+        const headersList = await headers();
+        const ip =
+          headersList.get("x-forwarded-for")?.split(",")[0] ??
+          headersList.get("x-real-ip") ??
+          "unknown";
+
+        /* -------------------------------
+           2️⃣ Apply rate limit
+        -------------------------------- */
+        const { success } = await loginRateLimit.limit(
+          `login:${ip}:${credentials.email}`,
+        );
+
+        if (!success) {
+          // ❗ Silent fail = security best practice
+          return null;
+        }
         const users = await sql`
           SELECT * FROM users WHERE email = ${credentials.email}
         `;
