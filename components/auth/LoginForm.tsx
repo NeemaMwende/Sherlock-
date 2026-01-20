@@ -3,8 +3,12 @@
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { loginSchema } from "@/lib/schemas/auth";
+import { loginSchema } from "@/lib/validations";
 import { z } from "zod";
+import {
+  GoogleReCaptchaProvider,
+  useGoogleReCaptcha,
+} from "react-google-recaptcha-v3";
 
 import {
   Form,
@@ -21,15 +25,27 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 type LoginValues = z.infer<typeof loginSchema>;
 
-export default function LoginForm() {
+function LoginFormInner() {
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     mode: "onChange",
   });
 
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
   async function onSubmit(values: LoginValues) {
+    if (!executeRecaptcha) {
+      alert("reCAPTCHA not ready");
+      return;
+    }
+
+    // ✅ Get CAPTCHA token
+    const recaptchaToken = await executeRecaptcha("login_submit");
+
     await signIn("credentials", {
       ...values,
+      recaptchaToken,
+      redirect: true,
       callbackUrl: "/dashboard",
     });
   }
@@ -43,6 +59,7 @@ export default function LoginForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Email */}
             <FormField
               control={form.control}
               name="email"
@@ -57,6 +74,7 @@ export default function LoginForm() {
               )}
             />
 
+            {/* Password */}
             <FormField
               control={form.control}
               name="password"
@@ -82,5 +100,15 @@ export default function LoginForm() {
         </Form>
       </CardContent>
     </Card>
+  );
+}
+
+export default function LoginForm() {
+  return (
+    <GoogleReCaptchaProvider
+      reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+    >
+      <LoginFormInner />
+    </GoogleReCaptchaProvider>
   );
 }

@@ -2,8 +2,12 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signupSchema } from "@/lib/schemas/auth";
+import { signupSchema } from "@/lib/validations";
 import { z } from "zod";
+import {
+  GoogleReCaptchaProvider,
+  useGoogleReCaptcha,
+} from "react-google-recaptcha-v3";
 
 import {
   Form,
@@ -20,20 +24,34 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 type SignupValues = z.infer<typeof signupSchema>;
 
-export default function SignupForm() {
+function SignupFormInner() {
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
-    mode: "onChange", // 👈 LIVE VALIDATION
+    mode: "onChange",
   });
 
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
   async function onSubmit(values: SignupValues) {
+    if (!executeRecaptcha) {
+      alert("reCAPTCHA not ready");
+      return;
+    }
+
+    // ✅ Get CAPTCHA token
+    const recaptchaToken = await executeRecaptcha("signup_submit");
+
     const res = await fetch("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify(values),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...values, recaptchaToken }),
     });
 
+    const data = await res.json();
     if (!res.ok) {
-      alert("Signup failed");
+      alert(data.message || "Signup failed");
+    } else {
+      alert("Signup successful! Please login.");
     }
   }
 
@@ -46,6 +64,7 @@ export default function SignupForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Name */}
             <FormField
               control={form.control}
               name="name"
@@ -60,6 +79,7 @@ export default function SignupForm() {
               )}
             />
 
+            {/* Email */}
             <FormField
               control={form.control}
               name="email"
@@ -78,6 +98,7 @@ export default function SignupForm() {
               )}
             />
 
+            {/* Password */}
             <FormField
               control={form.control}
               name="password"
@@ -103,5 +124,15 @@ export default function SignupForm() {
         </Form>
       </CardContent>
     </Card>
+  );
+}
+
+export default function SignupForm() {
+  return (
+    <GoogleReCaptchaProvider
+      reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+    >
+      <SignupFormInner />
+    </GoogleReCaptchaProvider>
   );
 }
