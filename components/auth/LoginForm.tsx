@@ -1,8 +1,9 @@
 "use client";
 
+import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signupSchema } from "@/lib/validations";
+import { loginSchema } from "@/lib/validations";
 import { z } from "zod";
 import {
   GoogleReCaptchaProvider,
@@ -22,63 +23,42 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-type SignupValues = z.infer<typeof signupSchema>;
+type LoginValues = z.infer<typeof loginSchema>;
 
-function SignupFormInner() {
-  const form = useForm<SignupValues>({
-    resolver: zodResolver(signupSchema),
+function LoginFormInner() {
+  const form = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
     mode: "onChange",
   });
 
   const { executeRecaptcha } = useGoogleReCaptcha();
 
-  async function onSubmit(values: SignupValues) {
+  async function onSubmit(values: LoginValues) {
     if (!executeRecaptcha) {
       alert("reCAPTCHA not ready");
       return;
     }
 
     // ✅ Get CAPTCHA token
-    const recaptchaToken = await executeRecaptcha("signup_submit");
+    const recaptchaToken = await executeRecaptcha("login_submit");
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...values, recaptchaToken }),
+    await signIn("credentials", {
+      ...values,
+      recaptchaToken,
+      redirect: true,
+      callbackUrl: "/dashboard",
     });
-
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data.message || "Signup failed");
-    } else {
-      alert("Signup successful! Please login.");
-    }
   }
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Create account</CardTitle>
+        <CardTitle>Login</CardTitle>
       </CardHeader>
 
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Name */}
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             {/* Email */}
             <FormField
               control={form.control}
@@ -87,11 +67,7 @@ function SignupFormInner() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="email@example.com"
-                      {...field}
-                    />
+                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -118,7 +94,7 @@ function SignupFormInner() {
               className="w-full"
               disabled={!form.formState.isValid}
             >
-              Sign up
+              Login
             </Button>
           </form>
         </Form>
@@ -127,12 +103,12 @@ function SignupFormInner() {
   );
 }
 
-export default function SignupForm() {
+export default function LoginForm() {
   return (
     <GoogleReCaptchaProvider
       reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
     >
-      <SignupFormInner />
+      <LoginFormInner />
     </GoogleReCaptchaProvider>
   );
 }
