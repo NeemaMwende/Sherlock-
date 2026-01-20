@@ -16,29 +16,38 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Scale } from "lucide-react";
 
+interface AuthFormData {
+  name?: string;
+  email: string;
+  password: string;
+}
 interface AuthFormProps {
   type: "login" | "signup";
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: AuthFormData) => Promise<void>;
 }
 
 export default function AuthForm({ type, onSubmit }: AuthFormProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AuthFormData>({
     name: "",
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
       await onSubmit(formData);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong");
+      }
     } finally {
       setLoading(false);
     }

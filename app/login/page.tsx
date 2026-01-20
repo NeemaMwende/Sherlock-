@@ -3,12 +3,12 @@
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import AuthForm from "@/components/AuthForm";
-import { loginSchema } from "@/lib/validations";
+import { LoginInput, loginSchema } from "@/lib/validations";
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const handleLogin = async (data: any) => {
+  const handleLogin = async (data: LoginInput) => {
     const validated = loginSchema.parse(data);
 
     const result = await signIn("credentials", {
