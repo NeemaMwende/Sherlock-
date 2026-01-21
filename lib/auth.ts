@@ -5,18 +5,18 @@ import sql from "./db";
 import { headers } from "next/headers";
 import { loginRateLimit } from "./rate-limit";
 
-async function verifyRecaptcha(token: string) {
-  const secret = process.env.RECAPTCHA_SECRET_KEY!;
-  const res = await fetch(`https://www.google.com/recaptcha/api/siteverify`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `secret=${secret}&response=${token}`,
-  });
-  const data = await res.json();
-  if (!data.success || (data.score && data.score < 0.5)) {
-    throw new Error("Failed reCAPTCHA verification");
-  }
-}
+// async function verifyRecaptcha(token: string) {
+//   const secret = process.env.RECAPTCHA_SECRET_KEY!;
+//   const res = await fetch(`https://www.google.com/recaptcha/api/siteverify`, {
+//     method: "POST",
+//     headers: { "Content-Type": "application/x-www-form-urlencoded" },
+//     body: `secret=${secret}&response=${token}`,
+//   });
+//   const data = await res.json();
+//   if (!data.success || (data.score && data.score < 0.5)) {
+//     throw new Error("Failed reCAPTCHA verification");
+//   }
+// }
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -25,31 +25,31 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        recaptchaToken: { label: "reCAPTCHA Token", type: "text" },
+        //recaptchaToken: { label: "reCAPTCHA Token", type: "text" },
       },
       async authorize(credentials) {
         if (
           !credentials?.email ||
-          !credentials?.password ||
-          !credentials?.recaptchaToken
+          !credentials?.password
+          //!credentials?.recaptchaToken
         )
           return null;
 
         // ✅ verify CAPTCHA
-        await verifyRecaptcha(credentials.recaptchaToken);
+        //await verifyRecaptcha(credentials.recaptchaToken);
 
         // ✅ get client IP
-        const headersList = await headers();
-        const ip =
-          headersList.get("x-forwarded-for")?.split(",")[0] ??
-          headersList.get("x-real-ip") ??
-          "unknown";
+        // const headersList = await headers();
+        // const ip =
+        //   headersList.get("x-forwarded-for")?.split(",")[0] ??
+        //   headersList.get("x-real-ip") ??
+        //   "unknown";
 
         // ✅ rate limit check
-        const { success } = await loginRateLimit.limit(
-          `login:${ip}:${credentials.email}`,
-        );
-        if (!success) return null;
+        // const { success } = await loginRateLimit.limit(
+        //   `login:${ip}:${credentials.email}`,
+        // );
+        // if (!success) return null;
 
         // ✅ fetch user
         const users =
