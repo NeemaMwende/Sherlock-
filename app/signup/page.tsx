@@ -3,12 +3,20 @@
 import { useRouter } from "next/navigation";
 import AuthForm from "@/components/AuthForm";
 import { signupSchema } from "@/lib/validations";
+import { z } from "zod";
+
+type SignupData = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
   const router = useRouter();
 
-  const handleSignup = async (data: any) => {
-    const validated = signupSchema.parse(data);
+  const handleSignup = async (data: {
+    name?: string;
+    email: string;
+    password: string;
+  }) => {
+    // runtime guarantee
+    const validated = signupSchema.parse(data as SignupData);
 
     const res = await fetch("/api/auth/signup", {
       method: "POST",
