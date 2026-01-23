@@ -16,7 +16,7 @@ export async function PATCH(
     }
 
     const { name, email, role } = await request.json();
-    const userId = parseInt(params.id);
+    const userId = params.id; // ⬅️ NO parseInt
 
     if (!name || !email) {
       return NextResponse.json(
@@ -25,9 +25,9 @@ export async function PATCH(
       );
     }
 
-    // Check if email is already taken by another user
     const existingUser = await sql`
-      SELECT id FROM users WHERE email = ${email} AND id != ${userId}
+      SELECT id FROM users
+      WHERE email = ${email} AND id != ${userId}
     `;
 
     if (existingUser.length > 0) {
@@ -38,7 +38,7 @@ export async function PATCH(
     }
 
     const [updatedUser] = await sql`
-      UPDATE users 
+      UPDATE users
       SET name = ${name}, email = ${email}, role = ${role}
       WHERE id = ${userId}
       RETURNING id, name, email, role, created_at, last_login
@@ -57,10 +57,9 @@ export async function PATCH(
     );
   }
 }
-
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -69,10 +68,19 @@ export async function DELETE(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = parseInt(params.id);
+    const { id } = await params; // ✅ unwrap params
+    const userId = Number(id);
 
-    // Prevent admin from deleting themselves
-    if (session.user?.id === userId.toString()) {
+    if (isNaN(userId)) {
+      return NextResponse.json({ message: "Invalid user ID" }, { status: 400 });
+    }
+
+    // ✅ Prevent admin from deleting themselves (email-based)
+    const self = await sql`
+      SELECT id FROM users WHERE email = ${session.user.email}
+    `;
+
+    if (self.length > 0 && self[0].id === userId) {
       return NextResponse.json(
         { message: "Cannot delete your own account" },
         { status: 400 },
@@ -80,7 +88,8 @@ export async function DELETE(
     }
 
     const result = await sql`
-      DELETE FROM users WHERE id = ${userId}
+      DELETE FROM users
+      WHERE id = ${userId}
       RETURNING id
     `;
 
