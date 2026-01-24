@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,6 +25,11 @@ type Client = {
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    setNow(Date.now());
+  }, []);
 
   const [form, setForm] = useState({
     full_name: "",
@@ -60,19 +65,20 @@ export default function ClientsPage() {
     fetchClients();
   };
 
-  const now = useMemo(() => Date.now(), []);
-
   const formatDaysAgo = (date: string) => {
+    if (!now) return "—";
+
     const days = Math.floor(
       (now - new Date(date).getTime()) / (1000 * 60 * 60 * 24),
     );
+
     return days === 0 ? "Today" : `${days} day${days > 1 ? "s" : ""} ago`;
   };
 
   return (
-    <div className="space-y-8">
+    <div className="h-full flex flex-col space-y-6">
       {/* Register Client */}
-      <Card className="border-black">
+      <Card className="border-black flex-shrink-0">
         <CardHeader>
           <CardTitle className="text-xl">Register New Client</CardTitle>
         </CardHeader>
@@ -129,33 +135,35 @@ export default function ClientsPage() {
       </Card>
 
       {/* Clients Table */}
-      <Card className="border-black">
-        <CardHeader>
+      <Card className="border-black flex-1 flex flex-col overflow-hidden">
+        <CardHeader className="flex-shrink-0">
           <CardTitle className="text-xl">Clients</CardTitle>
         </CardHeader>
 
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Full Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Active Cases</TableHead>
-                <TableHead>Registered</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {clients.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell>{client.full_name}</TableCell>
-                  <TableCell>{client.email}</TableCell>
-                  <TableCell>{client.active_cases}</TableCell>
-                  <TableCell>{formatDaysAgo(client.created_at)}</TableCell>
+        <CardContent className="flex-1 overflow-auto p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-white z-10">
+                <TableRow>
+                  <TableHead>Full Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Active Cases</TableHead>
+                  <TableHead>Registered</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+
+              <TableBody>
+                {clients.map((client) => (
+                  <TableRow key={client.id}>
+                    <TableCell>{client.full_name}</TableCell>
+                    <TableCell>{client.email}</TableCell>
+                    <TableCell>{client.active_cases}</TableCell>
+                    <TableCell>{formatDaysAgo(client.created_at)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
