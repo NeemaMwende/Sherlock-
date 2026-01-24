@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -19,6 +18,9 @@ import {
   FileText,
   Briefcase,
   MessageSquare,
+  Users,
+  BarChart3,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -39,26 +41,27 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const router = useRouter();
-  const pathname = usePathname();
 
-  const menuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
-    { name: "Documents", icon: FileText, href: "/dashboard/documents" },
-    { name: "Cases", icon: Briefcase, href: "/dashboard/cases" },
-    { name: "Messages", icon: MessageSquare, href: "/dashboard/messages" },
+  const userMenuItems = [
+    { name: "Dashboard", icon: LayoutDashboard, href: "#" },
+    { name: "Documents", icon: FileText, href: "#" },
+    { name: "Cases", icon: Briefcase, href: "#" },
+    { name: "Messages", icon: MessageSquare, href: "#" },
   ];
 
+  const adminMenuItems = [
+    { name: "Dashboard", icon: LayoutDashboard, href: "#" },
+    { name: "Users", icon: Users, href: "#" },
+    { name: "Analytics", icon: BarChart3, href: "#" },
+    { name: "Settings", icon: Settings, href: "#" },
+  ];
+
+  const menuItems = isAdmin ? adminMenuItems : userMenuItems;
   const initials = userName
     .split(" ")
     .map((n) => n[0])
     .join("")
     .toUpperCase();
-
-  const handleNavClick = (href: string) => {
-    router.push(href);
-    setMobileMenuOpen(false);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -120,7 +123,7 @@ export default function DashboardLayout({
       </nav>
 
       <div className="flex">
-        {/* Sidebar */}
+        {/* Sidebar - Desktop */}
         <aside
           className={`hidden lg:flex flex-col bg-white border-r transition-all duration-300 ${
             sidebarOpen ? "w-64" : "w-20"
@@ -128,22 +131,19 @@ export default function DashboardLayout({
         >
           <div className="flex-1 py-6">
             <nav className="space-y-1 px-3">
-              {menuItems.map((item) => {
-                const active = pathname === item.href;
-                return (
-                  <Button
-                    key={item.name}
-                    variant={active ? "default" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => handleNavClick(item.href)}
-                  >
-                    <item.icon className="h-5 w-5 mr-3" />
-                    {sidebarOpen && <span>{item.name}</span>}
-                  </Button>
-                );
-              })}
+              {menuItems.map((item) => (
+                <Button
+                  key={item.name}
+                  variant="ghost"
+                  className="w-full justify-start"
+                >
+                  <item.icon className="h-5 w-5 mr-3" />
+                  {sidebarOpen && <span>{item.name}</span>}
+                </Button>
+              ))}
             </nav>
           </div>
+
           <div className="p-3 border-t">
             <Button
               variant="ghost"
@@ -156,7 +156,7 @@ export default function DashboardLayout({
           </div>
         </aside>
 
-        {/* Mobile Sidebar */}
+        {/* Sidebar - Mobile */}
         {mobileMenuOpen && (
           <div
             className="lg:hidden fixed inset-0 z-50 bg-black/50"
@@ -174,19 +174,30 @@ export default function DashboardLayout({
                   </span>
                 </div>
               </div>
+
               <nav className="space-y-1 p-3">
                 {menuItems.map((item) => (
                   <Button
                     key={item.name}
                     variant="ghost"
                     className="w-full justify-start"
-                    onClick={() => handleNavClick(item.href)}
                   >
                     <item.icon className="h-5 w-5 mr-3" />
                     <span>{item.name}</span>
                   </Button>
                 ))}
               </nav>
+
+              <div className="absolute bottom-0 w-full p-3 border-t">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-red-600"
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                >
+                  <LogOut className="h-5 w-5 mr-3" />
+                  <span>Logout</span>
+                </Button>
+              </div>
             </aside>
           </div>
         )}
