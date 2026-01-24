@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -68,22 +68,30 @@ export default function CasesPage() {
     due_date: "",
   });
 
-  const fetchCases = async () => {
-    const res = await fetch("/api/cases");
-    const data = await res.json();
-    setCases(data);
-  };
+  const fetchCases = useCallback(async () => {
+    try {
+      const res = await fetch("/api/cases");
+      const data = await res.json();
+      setCases(Array.isArray(data) ? data : []);
+    } catch {
+      setCases([]);
+    }
+  }, []);
 
-  const fetchClients = async () => {
-    const res = await fetch("/api/clients");
-    const data = await res.json();
-    setClients(data);
-  };
+  const fetchClients = useCallback(async () => {
+    try {
+      const res = await fetch("/api/clients");
+      const data = await res.json();
+      setClients(Array.isArray(data) ? data : []);
+    } catch {
+      setClients([]);
+    }
+  }, []);
 
   useEffect(() => {
     fetchCases();
     fetchClients();
-  }, []);
+  }, [fetchCases, fetchClients]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

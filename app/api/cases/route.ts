@@ -11,16 +11,25 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const cases = await sql(
-      `SELECT 
-        c.*,
-        cl.full_name as client_name
+    const cases = await sql`
+      SELECT 
+        c.id,
+        c.case_number,
+        c.title,
+        c.description,
+        c.client_id,
+        c.priority,
+        c.status,
+        c.due_date,
+        c.created_at,
+        cl.full_name AS client_name
       FROM cases c
       LEFT JOIN clients cl ON c.client_id = cl.id
-      ORDER BY c.created_at DESC`,
-    );
+      ORDER BY c.created_at DESC
+    `;
 
-    return NextResponse.json(cases.rows);
+    // 🔑 IMPORTANT: Neon already returns an array
+    return NextResponse.json(cases);
   } catch (error) {
     console.error("Error fetching cases:", error);
     return NextResponse.json(
@@ -38,26 +47,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { title, description, client_id, priority, status, due_date } = body;
+    const { title, description, client_id, priority, status, due_date } =
+      await request.json();
 
-    // Generate case number (format: CASE-YYYY-XXXX)
+    // Generate case number: CASE-YYYY-XXXX
     const year = new Date().getFullYear();
-    const countResult = await sql(
-      "SELECT COUNT(*) as count FROM cases WHERE EXTRACT(YEAR FROM created_at) = $1",
-      [year],
-    );
-    const count = parseInt(countResult.rows[0].count) + 1;
+
+    const countResult = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM cases
+      WHERE EXTRACT(YEAR FROM created_at) = ${year}
+    `;
+
+    const count = countResult[0].count + 1;
+
     const case_number = `CASE-${year}-${String(count).padStart(4, "0")}`;
 
-    const result = await sql(
-      `INSERT INTO cases (case_number, title, description, client_id, priority, status, due_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [case_number, title, description, client_id, priority, status, due_date],
-    );
+    const inserted = await sql`
+      INSERT INTO cases (
+        case_number,
+        title,
+        description,
+        client_id,
+        priority,
+        status,
+        due_date
+      )
+      VALUES (
+        ${case_number},
+        ${title},
+        ${description},
+        ${client_id},
+        ${priority},
+        ${status},
+        ${due_date}
+      )
+      RETURNING *
+    `;
 
-    return NextResponse.json(result.rows[0], { status: 201 });
+    return NextResponse.json(inserted[0], { status: 201 });
   } catch (error) {
     console.error("Error creating case:", error);
     return NextResponse.json(
