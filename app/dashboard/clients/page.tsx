@@ -1,0 +1,163 @@
+"use client";
+
+import { useEffect, useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+
+type Client = {
+  id: number;
+  full_name: string;
+  email: string;
+  active_cases: number;
+  created_at: string;
+};
+
+export default function ClientsPage() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [form, setForm] = useState({
+    full_name: "",
+    email: "",
+    active_cases: "",
+  });
+
+  const fetchClients = async () => {
+    const res = await fetch("/api/clients");
+    const data = await res.json();
+    setClients(data);
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    await fetch("/api/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...form,
+        active_cases: Number(form.active_cases),
+      }),
+    });
+
+    setForm({ full_name: "", email: "", active_cases: "" });
+    setLoading(false);
+    fetchClients();
+  };
+
+  const now = useMemo(() => Date.now(), []);
+
+  const formatDaysAgo = (date: string) => {
+    const days = Math.floor(
+      (now - new Date(date).getTime()) / (1000 * 60 * 60 * 24),
+    );
+    return days === 0 ? "Today" : `${days} day${days > 1 ? "s" : ""} ago`;
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Register Client */}
+      <Card className="border-black">
+        <CardHeader>
+          <CardTitle className="text-xl">Register New Client</CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          >
+            <div>
+              <Label>Full Name</Label>
+              <Input
+                value={form.full_name}
+                onChange={(e) =>
+                  setForm({ ...form, full_name: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div>
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                required
+              />
+            </div>
+
+            <div>
+              <Label>Active Cases</Label>
+              <Input
+                type="number"
+                value={form.active_cases}
+                onChange={(e) =>
+                  setForm({ ...form, active_cases: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="md:col-span-3">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-black text-white hover:bg-gray-800"
+              >
+                {loading ? "Registering..." : "Register Client"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Clients Table */}
+      <Card className="border-black">
+        <CardHeader>
+          <CardTitle className="text-xl">Clients</CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Full Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Active Cases</TableHead>
+                <TableHead>Registered</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {clients.map((client) => (
+                <TableRow key={client.id}>
+                  <TableCell>{client.full_name}</TableCell>
+                  <TableCell>{client.email}</TableCell>
+                  <TableCell>{client.active_cases}</TableCell>
+                  <TableCell>{formatDaysAgo(client.created_at)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

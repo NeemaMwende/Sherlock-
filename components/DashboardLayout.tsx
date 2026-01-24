@@ -25,7 +25,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-
+import Link from "next/link";
 interface DashboardLayoutProps {
   userName: string;
   userEmail: string;
@@ -43,17 +43,24 @@ export default function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const userMenuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, href: "#" },
-    { name: "Documents", icon: FileText, href: "#" },
-    { name: "Cases", icon: Briefcase, href: "#" },
-    { name: "Messages", icon: MessageSquare, href: "#" },
+    {
+      name: "Dashboard",
+      icon: LayoutDashboard,
+      href: "/app/dashboard/dashboard",
+    },
+    { name: "Cases", icon: FileText, href: "/dashboard/cases" },
+    { name: "Clients", icon: Briefcase, href: "/dashboard/clients" },
+    { name: "Research", icon: MessageSquare, href: "/dashboard/research" },
+    { name: "Security", icon: MessageSquare, href: "/dashboard/security" },
   ];
 
   const adminMenuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, href: "#" },
-    { name: "Users", icon: Users, href: "#" },
-    { name: "Analytics", icon: BarChart3, href: "#" },
-    { name: "Settings", icon: Settings, href: "#" },
+    { name: "Dashboard", icon: LayoutDashboard, href: "/admin/" },
+    { name: "Users", icon: Users, href: "/admin/users" },
+    { name: "Analytics", icon: BarChart3, href: "/admin/analytics" },
+    { name: "Settings", icon: Settings, href: "/admin/settings" },
+    { name: "Logs", icon: Settings, href: "/admin/logs" },
+    { name: "Reports", icon: BarChart3, href: "/admin/reports" },
   ];
 
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
@@ -137,8 +144,10 @@ export default function DashboardLayout({
                   variant="ghost"
                   className="w-full justify-start"
                 >
-                  <item.icon className="h-5 w-5 mr-3" />
-                  {sidebarOpen && <span>{item.name}</span>}
+                  <Link href={item.href}>
+                    <item.icon className="h-5 w-5 mr-3" />
+                    {sidebarOpen && <span>{item.name}</span>}
+                  </Link>
                 </Button>
               ))}
             </nav>
@@ -182,8 +191,10 @@ export default function DashboardLayout({
                     variant="ghost"
                     className="w-full justify-start"
                   >
-                    <item.icon className="h-5 w-5 mr-3" />
-                    <span>{item.name}</span>
+                    <Link href={item.href}>
+                      <item.icon className="h-5 w-5 mr-3" />
+                      <span>{item.name}</span>
+                    </Link>
                   </Button>
                 ))}
               </nav>
