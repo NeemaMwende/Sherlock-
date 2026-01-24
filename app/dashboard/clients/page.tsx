@@ -25,11 +25,6 @@ type Client = {
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
-  const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    setNow(Date.now());
-  }, []);
 
   const [form, setForm] = useState({
     full_name: "",
@@ -44,7 +39,17 @@ export default function ClientsPage() {
   };
 
   useEffect(() => {
-    fetchClients();
+    let mounted = true;
+
+    (async () => {
+      const res = await fetch("/api/clients");
+      const data = await res.json();
+      if (mounted) setClients(data);
+    })();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,16 +68,6 @@ export default function ClientsPage() {
     setForm({ full_name: "", email: "", active_cases: "" });
     setLoading(false);
     fetchClients();
-  };
-
-  const formatDaysAgo = (date: string) => {
-    if (!now) return "—";
-
-    const days = Math.floor(
-      (now - new Date(date).getTime()) / (1000 * 60 * 60 * 24),
-    );
-
-    return days === 0 ? "Today" : `${days} day${days > 1 ? "s" : ""} ago`;
   };
 
   return (
@@ -158,7 +153,11 @@ export default function ClientsPage() {
                     <TableCell>{client.full_name}</TableCell>
                     <TableCell>{client.email}</TableCell>
                     <TableCell>{client.active_cases}</TableCell>
-                    <TableCell>{formatDaysAgo(client.created_at)}</TableCell>
+                    <TableCell>
+                      {client.days_ago === 0
+                        ? "Today"
+                        : `${client.days_ago} day${client.days_ago > 1 ? "s" : ""} ago`}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
