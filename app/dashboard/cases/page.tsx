@@ -110,9 +110,9 @@ export default function CasesPage() {
         cache: "no-store",
       });
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+      // if (!res.ok) {
+      //   throw new Error(`HTTP error! status: ${res.status}`);
+      // }
 
       const data = await res.json();
       console.log("Fetched clients:", data);
