@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch cases with user information
+    // Fetch cases with client information
     const cases = await sql`
       SELECT 
         cases.id,
@@ -22,10 +22,9 @@ export async function GET() {
         cases.status,
         cases.created_at,
         cases.updated_at,
-        users.name AS user_name,
-        users.email AS user_email
+        clients.full_name AS user_name
       FROM cases
-      LEFT JOIN users ON cases.user_id = users.id
+      LEFT JOIN clients ON cases.user_id = clients.id
       ORDER BY cases.created_at DESC
     `;
 
@@ -55,14 +54,16 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    console.log("Received payload:", body);
+
     const { name, description, user_id, priority, status } = body;
 
     // Validate required fields
     if (!name || !description || !user_id) {
       return NextResponse.json(
         {
-          error:
-            "Missing required fields: name, description, and user_id are required",
+          error: "Missing required fields",
+          details: "name, description, and user_id are required",
         },
         { status: 400 },
       );
@@ -71,7 +72,10 @@ export async function POST(request: Request) {
     // Validate priority
     if (!["High", "Medium", "Low"].includes(priority)) {
       return NextResponse.json(
-        { error: "Invalid priority. Must be High, Medium, or Low" },
+        {
+          error: "Invalid priority",
+          details: "Priority must be High, Medium, or Low",
+        },
         { status: 400 },
       );
     }
@@ -82,20 +86,27 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         {
-          error:
-            "Invalid status. Must be Pending, In Progress, Completed, or Cancelled",
+          error: "Invalid status",
+          details:
+            "Status must be Pending, In Progress, Completed, or Cancelled",
         },
         { status: 400 },
       );
     }
 
-    // Verify user exists
-    const userExists = await sql`
-      SELECT id FROM users WHERE id = ${user_id}
+    // Verify client exists
+    const clientExists = await sql`
+      SELECT id FROM clients WHERE id = ${user_id}
     `;
 
-    if (userExists.length === 0) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (clientExists.length === 0) {
+      return NextResponse.json(
+        {
+          error: "Client not found",
+          details: `No client found with ID ${user_id}`,
+        },
+        { status: 404 },
+      );
     }
 
     // Insert the case
@@ -118,22 +129,16 @@ export async function POST(request: Request) {
         NOW(),
         NOW()
       )
-      RETURNING 
-        id,
-        name,
-        description,
-        user_id,
-        priority,
-        status,
-        created_at,
-        updated_at
+      RETURNING *
     `;
 
     if (inserted.length === 0) {
       throw new Error("Failed to insert case");
     }
 
-    // Fetch the complete case with user information
+    console.log("Case inserted:", inserted[0]);
+
+    // Fetch the complete case with client information
     const completeCase = await sql`
       SELECT 
         cases.id,
@@ -144,10 +149,9 @@ export async function POST(request: Request) {
         cases.status,
         cases.created_at,
         cases.updated_at,
-        users.name AS user_name,
-        users.email AS user_email
+        clients.full_name AS user_name
       FROM cases
-      LEFT JOIN users ON cases.user_id = users.id
+      LEFT JOIN clients ON cases.user_id = clients.id
       WHERE cases.id = ${inserted[0].id}
     `;
 
