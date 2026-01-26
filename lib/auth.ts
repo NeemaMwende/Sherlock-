@@ -5,19 +5,6 @@ import sql from "./db";
 // import { headers } from "next/headers";
 // import { loginRateLimit } from "./rate-limit";
 
-// async function verifyRecaptcha(token: string) {
-//   const secret = process.env.RECAPTCHA_SECRET_KEY!;
-//   const res = await fetch(`https://www.google.com/recaptcha/api/siteverify`, {
-//     method: "POST",
-//     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-//     body: `secret=${secret}&response=${token}`,
-//   });
-//   const data = await res.json();
-//   if (!data.success || (data.score && data.score < 0.5)) {
-//     throw new Error("Failed reCAPTCHA verification");
-//   }
-// }
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -25,18 +12,9 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        //recaptchaToken: { label: "reCAPTCHA Token", type: "text" },
       },
       async authorize(credentials) {
-        if (
-          !credentials?.email ||
-          !credentials?.password
-          //!credentials?.recaptchaToken
-        )
-          return null;
-
-        // ✅ verify CAPTCHA
-        //await verifyRecaptcha(credentials.recaptchaToken);
+        if (!credentials?.email || !credentials?.password) return null;
 
         // ✅ get client IP
         // const headersList = await headers();
