@@ -1,12 +1,12 @@
 // app/api/admin/users/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import sql from "@/lib/db";
 
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } },
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -15,8 +15,14 @@ export async function PATCH(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+    const userId = Number(id);
+
+    if (isNaN(userId)) {
+      return NextResponse.json({ message: "Invalid user ID" }, { status: 400 });
+    }
+
     const { name, email, role } = await request.json();
-    const userId = params.id; // ⬅️ NO parseInt
 
     if (!name || !email) {
       return NextResponse.json(
@@ -57,8 +63,9 @@ export async function PATCH(
     );
   }
 }
+
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -68,14 +75,13 @@ export async function DELETE(
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params; // ✅ unwrap params
+    const { id } = await params;
     const userId = Number(id);
 
     if (isNaN(userId)) {
       return NextResponse.json({ message: "Invalid user ID" }, { status: 400 });
     }
 
-    // ✅ Prevent admin from deleting themselves (email-based)
     const self = await sql`
       SELECT id FROM users WHERE email = ${session.user.email}
     `;

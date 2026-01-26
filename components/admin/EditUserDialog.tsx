@@ -1,4 +1,3 @@
-// components/admin/EditUserDialog.tsx
 "use client";
 
 import { useState } from "react";
@@ -36,7 +35,9 @@ export default function EditUserDialog({
 }: EditUserDialogProps) {
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
-  const [role, setRole] = useState(user.role);
+  const [role, setRole] = useState<"user" | "admin">(
+    user.role as "user" | "admin",
+  );
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -109,7 +110,12 @@ export default function EditUserDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select value={role} onValueChange={setRole}>
+              <Select
+                value={role}
+                onValueChange={
+                  (value) => setRole(value as "user" | "admin") // ✅ cast to correct union type
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

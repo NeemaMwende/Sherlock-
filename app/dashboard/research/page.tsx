@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,8 +16,12 @@ import { Send, Bot, User, Loader2 } from "lucide-react";
 
 type Case = {
   id: number;
-  case_number: string;
-  title: string;
+  name: string;
+  description: string;
+  user_id: number;
+  user_name?: string;
+  priority: string;
+  status: string;
 };
 
 type Message = {
@@ -34,11 +38,16 @@ export default function ResearchPage() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const fetchCases = async () => {
-    const res = await fetch("/api/cases");
-    const data = await res.json();
-    setCases(data);
-  };
+  const fetchCases = useCallback(async () => {
+    try {
+      const res = await fetch("/api/cases");
+      const data = await res.json();
+      setCases(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching cases:", error);
+      setCases([]);
+    }
+  }, []);
 
   useEffect(() => {
     fetchCases();
@@ -51,7 +60,7 @@ export default function ResearchPage() {
         timestamp: new Date(),
       },
     ]);
-  }, []);
+  }, [fetchCases]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -130,7 +139,7 @@ export default function ResearchPage() {
     } else if (selectedCaseData) {
       const msg: Message = {
         role: "assistant",
-        content: `I'm now focused on case ${selectedCaseData.case_number}: ${selectedCaseData.title}. How can I help you with this case?`,
+        content: `I'm now focused on case #${selectedCaseData.id}: ${selectedCaseData.name}. How can I help you with this case?`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, msg]);
@@ -157,7 +166,7 @@ export default function ResearchPage() {
               <SelectItem value="general">General Research</SelectItem>
               {cases.map((caseItem) => (
                 <SelectItem key={caseItem.id} value={caseItem.id.toString()}>
-                  {caseItem.case_number} - {caseItem.title}
+                  #{caseItem.id} - {caseItem.name}
                 </SelectItem>
               ))}
             </SelectContent>

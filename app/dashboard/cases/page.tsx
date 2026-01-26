@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,103 +28,160 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Plus, Search, Filter } from "lucide-react";
+import { Plus, Search, RefreshCw } from "lucide-react";
 
-type Client = {
+type User = {
   id: number;
-  full_name: string;
+  name: string;
   email: string;
 };
 
 type Case = {
   id: number;
-  case_number: string;
-  title: string;
+  name: string;
   description: string;
-  client_id: number;
-  client_name?: string;
-  priority: "high" | "medium" | "low";
-  status: "open" | "in_progress" | "closed";
-  due_date: string;
+  user_id: number;
+  user_name?: string;
+  priority: "High" | "Medium" | "Low";
+  status: "In Progress" | "Pending" | "Completed" | "Cancelled";
   created_at: string;
+  updated_at: string;
+};
+
+type Priority = "Low" | "Medium" | "High";
+type CaseStatus = "Pending" | "In Progress" | "Completed" | "Cancelled";
+
+type CaseForm = {
+  priority: Priority;
+  name: string;
+  description: string;
+  user_id: string;
+  status: CaseStatus;
 };
 
 export default function CasesPage() {
   const [cases, setCases] = useState<Case[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterPriority, setFilterPriority] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-
-  const [form, setForm] = useState({
-    title: "",
+  const [filterPriority, setFilterPriority] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [form, setForm] = useState<CaseForm>({
+    name: "",
     description: "",
-    client_id: "",
-    priority: "medium",
-    status: "open",
-    due_date: "",
+    user_id: "",
+    priority: "Medium",
+    status: "Pending",
   });
 
-  const fetchCases = useCallback(async () => {
+  const fetchCases = async () => {
     try {
-      const res = await fetch("/api/cases");
+      setRefreshing(true);
+      const res = await fetch("/api/cases", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      });
       const data = await res.json();
+      console.log("Fetched cases:", data);
       setCases(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (error) {
+      console.error("Error fetching cases:", error);
       setCases([]);
+    } finally {
+      setRefreshing(false);
     }
-  }, []);
+  };
 
-  const fetchClients = useCallback(async () => {
+  const fetchUsers = async () => {
     try {
-      const res = await fetch("/api/clients");
+      const res = await fetch("/api/users", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      });
       const data = await res.json();
-      setClients(Array.isArray(data) ? data : []);
-    } catch {
-      setClients([]);
+      console.log("Fetched users:", data);
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setUsers([]);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchCases();
-    fetchClients();
-  }, [fetchCases, fetchClients]);
+    fetchUsers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.name || !form.description || !form.user_id) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
     setLoading(true);
+    try {
+      const payload = {
+        name: form.name.trim(),
+        description: form.description.trim(),
+        user_id: parseInt(form.user_id),
+        priority: form.priority,
+        status: form.status,
+      };
 
-    await fetch("/api/cases", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        client_id: Number(form.client_id),
-      }),
-    });
+      console.log("Submitting case:", payload);
 
-    setForm({
-      title: "",
-      description: "",
-      client_id: "",
-      priority: "medium",
-      status: "open",
-      due_date: "",
-    });
-    setLoading(false);
-    setDialogOpen(false);
-    fetchCases();
+      const res = await fetch("/api/cases", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to create case");
+      }
+
+      const newCase = await res.json();
+      console.log("Created case:", newCase);
+
+      setForm({
+        name: "",
+        description: "",
+        user_id: "",
+        priority: "Medium",
+        status: "Pending",
+      });
+      setDialogOpen(false);
+      await fetchCases();
+      alert("Case created successfully!");
+    } catch (error) {
+      console.error("Error creating case:", error);
+      alert(
+        `Failed to create case: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "high":
+      case "High":
         return "bg-red-100 text-red-800 border-red-200";
-      case "medium":
+      case "Medium":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low":
+      case "Low":
         return "bg-green-100 text-green-800 border-green-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
@@ -134,11 +190,13 @@ export default function CasesPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "open":
+      case "In Progress":
         return "bg-blue-100 text-blue-800 border-blue-200";
-      case "in_progress":
-        return "bg-purple-100 text-purple-800 border-purple-200";
-      case "closed":
+      case "Pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "Completed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "Cancelled":
         return "bg-gray-100 text-gray-800 border-gray-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
@@ -150,167 +208,186 @@ export default function CasesPage() {
       year: "numeric",
       month: "short",
       day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const filteredCases = cases.filter((caseItem) => {
     const matchesSearch =
-      caseItem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      caseItem.case_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      caseItem.client_name?.toLowerCase().includes(searchTerm.toLowerCase());
-
+      caseItem.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      caseItem.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      caseItem.user_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority =
       filterPriority === "all" || caseItem.priority === filterPriority;
-
     const matchesStatus =
       filterStatus === "all" || caseItem.status === filterStatus;
-
     return matchesSearch && matchesPriority && matchesStatus;
   });
 
   return (
-    <div className="h-full flex flex-col space-y-6">
+    <div className="min-h-screen bg-gray-50 p-6 flex flex-col gap-6">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Cases</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold">Cases Management</h1>
+          <p className="text-muted-foreground mt-1">
             Manage and track all your legal cases
           </p>
         </div>
-
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-black text-white hover:bg-gray-800">
-              <Plus className="h-4 w-4 mr-2" />
-              New Case
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Case</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <Label>Case Title *</Label>
-                  <Input
-                    value={form.title}
-                    onChange={(e) =>
-                      setForm({ ...form, title: e.target.value })
-                    }
-                    placeholder="Enter case title"
-                    required
-                  />
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={fetchCases}
+            disabled={refreshing}
+            className="gap-2"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-black text-white hover:bg-gray-800 gap-2">
+                <Plus className="h-4 w-4" />
+                New Case
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Create New Case</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <Label htmlFor="name">Case Name *</Label>
+                    <Input
+                      id="name"
+                      value={form.name}
+                      onChange={(e) =>
+                        setForm({ ...form, name: e.target.value })
+                      }
+                      placeholder="Enter case name"
+                      required
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="description">Description *</Label>
+                    <Textarea
+                      id="description"
+                      value={form.description}
+                      onChange={(e) =>
+                        setForm({ ...form, description: e.target.value })
+                      }
+                      placeholder="Enter case description"
+                      rows={4}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="user">Assigned User *</Label>
+                    <Select
+                      value={form.user_id}
+                      onValueChange={(value) =>
+                        setForm({ ...form, user_id: value })
+                      }
+                      required
+                    >
+                      <SelectTrigger id="user">
+                        <SelectValue placeholder="Select user" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.length === 0 ? (
+                          <SelectItem value="no-users" disabled>
+                            No users available
+                          </SelectItem>
+                        ) : (
+                          users.map((user) => (
+                            <SelectItem
+                              key={user.id}
+                              value={user.id.toString()}
+                            >
+                              {user.name} ({user.email})
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="priority">Priority *</Label>
+                    <Select
+                      value={form.priority}
+                      onValueChange={(value) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          priority: value as Priority,
+                        }))
+                      }
+                    >
+                      <SelectTrigger id="priority">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">Low</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label htmlFor="status">Status *</Label>
+                    <Select
+                      value={form.status}
+                      onValueChange={(value) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          status: value as CaseStatus,
+                        }))
+                      }
+                    >
+                      <SelectTrigger id="status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                        <SelectItem value="Cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-
-                <div className="md:col-span-2">
-                  <Label>Description *</Label>
-                  <Textarea
-                    value={form.description}
-                    onChange={(e) =>
-                      setForm({ ...form, description: e.target.value })
-                    }
-                    placeholder="Enter case description"
-                    rows={4}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label>Client *</Label>
-                  <Select
-                    value={form.client_id}
-                    onValueChange={(value) =>
-                      setForm({ ...form, client_id: value })
-                    }
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setDialogOpen(false);
+                      setForm({
+                        name: "",
+                        description: "",
+                        user_id: "",
+                        priority: "Medium",
+                        status: "Pending",
+                      });
+                    }}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((client) => (
-                        <SelectItem
-                          key={client.id}
-                          value={client.id.toString()}
-                        >
-                          {client.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Priority *</Label>
-                  <Select
-                    value={form.priority}
-                    onValueChange={(value) =>
-                      setForm({ ...form, priority: value })
-                    }
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-black text-white hover:bg-gray-800"
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    {loading ? "Creating..." : "Create Case"}
+                  </Button>
                 </div>
-
-                <div>
-                  <Label>Status *</Label>
-                  <Select
-                    value={form.status}
-                    onValueChange={(value) =>
-                      setForm({ ...form, status: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Due Date *</Label>
-                  <Input
-                    type="date"
-                    value={form.due_date}
-                    onChange={(e) =>
-                      setForm({ ...form, due_date: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-black text-white hover:bg-gray-800"
-                >
-                  {loading ? "Creating..." : "Create Case"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Filters Section */}
@@ -328,7 +405,6 @@ export default function CasesPage() {
                 />
               </div>
             </div>
-
             <div>
               <Select value={filterPriority} onValueChange={setFilterPriority}>
                 <SelectTrigger>
@@ -336,13 +412,12 @@ export default function CasesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Priorities</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
             <div>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger>
@@ -350,9 +425,10 @@ export default function CasesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -367,37 +443,45 @@ export default function CasesPage() {
             All Cases ({filteredCases.length})
           </CardTitle>
         </CardHeader>
-
         <CardContent className="flex-1 overflow-auto p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="sticky top-0 bg-white z-10">
                 <TableRow>
-                  <TableHead>Case Number</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Client</TableHead>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Assigned User</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Due Date</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead>Updated</TableHead>
                 </TableRow>
               </TableHeader>
-
               <TableBody>
                 {filteredCases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      No cases found
+                    <TableCell colSpan={8} className="text-center py-8">
+                      {refreshing ? "Loading cases..." : "No cases found"}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredCases.map((caseItem) => (
                     <TableRow key={caseItem.id}>
                       <TableCell className="font-medium">
-                        {caseItem.case_number}
+                        #{caseItem.id}
                       </TableCell>
-                      <TableCell>{caseItem.title}</TableCell>
-                      <TableCell>{caseItem.client_name}</TableCell>
+                      <TableCell className="font-medium">
+                        {caseItem.name}
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm text-muted-foreground line-clamp-2 max-w-xs">
+                          {caseItem.description}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        {caseItem.user_name || `User #${caseItem.user_id}`}
+                      </TableCell>
                       <TableCell>
                         <Badge
                           variant="outline"
@@ -411,11 +495,15 @@ export default function CasesPage() {
                           variant="outline"
                           className={getStatusColor(caseItem.status)}
                         >
-                          {caseItem.status.replace("_", " ")}
+                          {caseItem.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{formatDate(caseItem.due_date)}</TableCell>
-                      <TableCell>{formatDate(caseItem.created_at)}</TableCell>
+                      <TableCell className="text-sm">
+                        {formatDate(caseItem.created_at)}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {formatDate(caseItem.updated_at)}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

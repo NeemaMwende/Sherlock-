@@ -1,4 +1,3 @@
-// components/admin/DeleteUserDialog.tsx
 "use client";
 
 import { useState } from "react";
@@ -18,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 interface DeleteUserDialogProps {
   user: UserRow;
   onClose: () => void;
-  onUserDeleted: (userId: number) => void;
+  onUserDeleted: (userId: number) => void; // expects number
 }
 
 export default function DeleteUserDialog({
@@ -46,7 +45,8 @@ export default function DeleteUserDialog({
         description: "User deleted successfully",
       });
 
-      onUserDeleted(user.id);
+      // Cast user.id to number to match onUserDeleted type
+      onUserDeleted(Number(user.id));
       onClose();
     } catch (error) {
       toast({

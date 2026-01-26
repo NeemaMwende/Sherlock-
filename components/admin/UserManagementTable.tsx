@@ -1,4 +1,3 @@
-// components/admin/UserManagementTable.tsx
 "use client";
 
 import { useState } from "react";
@@ -40,8 +39,9 @@ export default function UserManagementTable({
     setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
   };
 
-  const handleUserDeleted = (userId: number) => {
-    setUsers(users.filter((u) => u.id !== userId));
+  const handleUserDeleted = (userId: number | string) => {
+    // Cast userId to string to match u.id type
+    setUsers(users.filter((u) => u.id.toString() !== userId.toString()));
   };
 
   const handleUserAdded = (newUser: UserRow) => {

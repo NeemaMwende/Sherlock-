@@ -8,7 +8,7 @@ import RecentLoginsCard from "@/components/admin/RecentLoginsCard";
 import QuickActionsCard from "@/components/admin/QuickActionsCard";
 import UserManagementTable from "@/components/admin/UserManagementTable";
 import sql from "@/lib/db";
-import { UserRow, RecentLogin } from "@/types/db";
+import { UserRow, RecentLogin, AdminStats } from "@/types/db";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -24,14 +24,14 @@ export default async function AdminPage() {
     LIMIT 10
   `) as UserRow[];
 
-  const stats = await sql`
+  const stats = (await sql`
     SELECT 
       COUNT(*) as total_users,
       COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_count,
       COUNT(CASE WHEN last_login > NOW() - INTERVAL '7 days' THEN 1 END) as active_users,
       COUNT(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN 1 END) as new_users
     FROM users
-  `;
+  `) as AdminStats[];
 
   const recentLogins = (await sql`
     SELECT name, email, last_login 

@@ -20,6 +20,7 @@ type Client = {
   email: string;
   active_cases: number;
   created_at: string;
+  days_ago: number;
 };
 
 export default function ClientsPage() {
