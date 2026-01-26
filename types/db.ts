@@ -12,3 +12,10 @@ export type UserRow = {
   created_at: Date;
   last_login: Date | null;
 };
+
+export type AdminStats = {
+  total_users: number;
+  admin_count: number;
+  active_users: number;
+  new_users: number;
+};

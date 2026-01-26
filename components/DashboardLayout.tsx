@@ -25,6 +25,8 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface DashboardLayoutProps {
   userName: string;
@@ -41,19 +43,27 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   const userMenuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, href: "#" },
-    { name: "Documents", icon: FileText, href: "#" },
-    { name: "Cases", icon: Briefcase, href: "#" },
-    { name: "Messages", icon: MessageSquare, href: "#" },
+    {
+      name: "Dashboard",
+      icon: LayoutDashboard,
+      href: "/app/dashboard/dashboard",
+    },
+    { name: "Cases", icon: FileText, href: "/dashboard/cases" },
+    { name: "Clients", icon: Briefcase, href: "/dashboard/clients" },
+    { name: "Research", icon: MessageSquare, href: "/dashboard/research" },
+    { name: "Security", icon: Settings, href: "/dashboard/security" },
   ];
 
   const adminMenuItems = [
-    { name: "Dashboard", icon: LayoutDashboard, href: "#" },
-    { name: "Users", icon: Users, href: "#" },
-    { name: "Analytics", icon: BarChart3, href: "#" },
-    { name: "Settings", icon: Settings, href: "#" },
+    { name: "Dashboard", icon: LayoutDashboard, href: "/admin/" },
+    { name: "Users", icon: Users, href: "/admin/users" },
+    { name: "Analytics", icon: BarChart3, href: "/admin/analytics" },
+    { name: "Settings", icon: Settings, href: "/admin/settings" },
+    { name: "Logs", icon: FileText, href: "/admin/logs" },
+    { name: "Reports", icon: BarChart3, href: "/admin/reports" },
   ];
 
   const menuItems = isAdmin ? adminMenuItems : userMenuItems;
@@ -63,10 +73,14 @@ export default function DashboardLayout({
     .join("")
     .toUpperCase();
 
+  const isActiveRoute = (href: string) => {
+    return pathname === href;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top Navigation */}
-      <nav className="bg-white border-b sticky top-0 z-40">
+      <nav className="bg-white border-b sticky top-0 z-40 flex-shrink-0">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -122,35 +136,42 @@ export default function DashboardLayout({
         </div>
       </nav>
 
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Desktop */}
         <aside
-          className={`hidden lg:flex flex-col bg-white border-r transition-all duration-300 ${
+          className={`hidden lg:flex flex-col bg-white border-r transition-all duration-300 flex-shrink-0 ${
             sidebarOpen ? "w-64" : "w-20"
           }`}
         >
-          <div className="flex-1 py-6">
+          <div className="flex-1 py-6 overflow-y-auto">
             <nav className="space-y-1 px-3">
               {menuItems.map((item) => (
-                <Button
-                  key={item.name}
-                  variant="ghost"
-                  className="w-full justify-start"
-                >
-                  <item.icon className="h-5 w-5 mr-3" />
-                  {sidebarOpen && <span>{item.name}</span>}
-                </Button>
+                <Link key={item.name} href={item.href} className="block">
+                  <Button
+                    variant="ghost"
+                    className={`w-full justify-start ${
+                      isActiveRoute(item.href)
+                        ? "bg-primary/10 text-primary hover:bg-primary/20"
+                        : ""
+                    }`}
+                  >
+                    <item.icon
+                      className={`h-5 w-5 ${sidebarOpen ? "mr-3" : ""}`}
+                    />
+                    {sidebarOpen && <span>{item.name}</span>}
+                  </Button>
+                </Link>
               ))}
             </nav>
           </div>
 
-          <div className="p-3 border-t">
+          <div className="p-3 border-t flex-shrink-0">
             <Button
               variant="ghost"
               className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
               onClick={() => signOut({ callbackUrl: "/login" })}
             >
-              <LogOut className="h-5 w-5 mr-3" />
+              <LogOut className={`h-5 w-5 ${sidebarOpen ? "mr-3" : ""}`} />
               {sidebarOpen && <span>Logout</span>}
             </Button>
           </div>
@@ -163,10 +184,10 @@ export default function DashboardLayout({
             onClick={() => setMobileMenuOpen(false)}
           >
             <aside
-              className="w-64 h-full bg-white"
+              className="w-64 h-full bg-white flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-4 border-b">
+              <div className="p-4 border-b flex-shrink-0">
                 <div className="flex items-center space-x-2">
                   <Scale className="h-8 w-8 text-primary" />
                   <span className="text-xl font-bold text-primary">
@@ -175,20 +196,30 @@ export default function DashboardLayout({
                 </div>
               </div>
 
-              <nav className="space-y-1 p-3">
+              <nav className="space-y-1 p-3 flex-1 overflow-y-auto">
                 {menuItems.map((item) => (
-                  <Button
+                  <Link
                     key={item.name}
-                    variant="ghost"
-                    className="w-full justify-start"
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block"
                   >
-                    <item.icon className="h-5 w-5 mr-3" />
-                    <span>{item.name}</span>
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      className={`w-full justify-start ${
+                        isActiveRoute(item.href)
+                          ? "bg-primary/10 text-primary hover:bg-primary/20"
+                          : ""
+                      }`}
+                    >
+                      <item.icon className="h-5 w-5 mr-3" />
+                      <span>{item.name}</span>
+                    </Button>
+                  </Link>
                 ))}
               </nav>
 
-              <div className="absolute bottom-0 w-full p-3 border-t">
+              <div className="p-3 border-t flex-shrink-0">
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-red-600"
@@ -203,7 +234,9 @@ export default function DashboardLayout({
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-6 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto">
+          <div className="h-full p-4 sm:p-6 lg:p-8">{children}</div>
+        </main>
       </div>
     </div>
   );

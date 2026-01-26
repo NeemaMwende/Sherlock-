@@ -2,8 +2,8 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import sql from "./db";
-import { headers } from "next/headers";
-import { loginRateLimit } from "./rate-limit";
+// import { headers } from "next/headers";
+// import { loginRateLimit } from "./rate-limit";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -17,17 +17,17 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         // ✅ get client IP
-        const headersList = await headers();
-        const ip =
-          headersList.get("x-forwarded-for")?.split(",")[0] ??
-          headersList.get("x-real-ip") ??
-          "unknown";
+        // const headersList = await headers();
+        // const ip =
+        //   headersList.get("x-forwarded-for")?.split(",")[0] ??
+        //   headersList.get("x-real-ip") ??
+        //   "unknown";
 
         // ✅ rate limit check
-        const { success } = await loginRateLimit.limit(
-          `login:${ip}:${credentials.email}`,
-        );
-        if (!success) return null;
+        // const { success } = await loginRateLimit.limit(
+        //   `login:${ip}:${credentials.email}`,
+        // );
+        // if (!success) return null;
 
         // ✅ fetch user
         const users =
