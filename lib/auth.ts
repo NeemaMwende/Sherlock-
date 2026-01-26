@@ -2,8 +2,8 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import sql from "./db";
-import { headers } from "next/headers";
-import { loginRateLimit } from "./rate-limit";
+// import { headers } from "next/headers";
+// import { loginRateLimit } from "./rate-limit";
 
 // async function verifyRecaptcha(token: string) {
 //   const secret = process.env.RECAPTCHA_SECRET_KEY!;
