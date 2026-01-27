@@ -30,10 +30,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, RefreshCw } from "lucide-react";
 
-type User = {
+type Client = {
   id: number;
-  name: string;
+  full_name: string;
   email: string;
+  active_cases: number;
+  created_at: string;
+  days_ago: number;
 };
 
 type Case = {
@@ -61,7 +64,7 @@ type CaseForm = {
 
 export default function CasesPage() {
   const [cases, setCases] = useState<Case[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -97,27 +100,32 @@ export default function CasesPage() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchClients = async () => {
     try {
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/clients", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
         cache: "no-store",
       });
+
+      // if (!res.ok) {
+      //   throw new Error(`HTTP error! status: ${res.status}`);
+      // }
+
       const data = await res.json();
-      console.log("Fetched users:", data);
-      setUsers(Array.isArray(data) ? data : []);
+      console.log("Fetched clients:", data);
+      setClients(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error fetching users:", error);
-      setUsers([]);
+      console.error("Error fetching clients:", error);
+      setClients([]);
     }
   };
 
   useEffect(() => {
     fetchCases();
-    fetchUsers();
+    fetchClients();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,13 +155,16 @@ export default function CasesPage() {
         body: JSON.stringify(payload),
       });
 
+      const responseData = await res.json();
+      console.log("Response:", responseData);
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to create case");
+        throw new Error(
+          responseData.error || responseData.details || "Failed to create case",
+        );
       }
 
-      const newCase = await res.json();
-      console.log("Created case:", newCase);
+      console.log("Created case:", responseData);
 
       setForm({
         name: "",
@@ -254,14 +265,16 @@ export default function CasesPage() {
                 New Case
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Create New Case</DialogTitle>
+                <DialogTitle className="text-xl">Create New Case</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <Label htmlFor="name">Case Name *</Label>
+              <form onSubmit={handleSubmit} className="space-y-6 pt-2">
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-sm font-medium">
+                      Case Name *
+                    </Label>
                     <Input
                       id="name"
                       value={form.name}
@@ -269,11 +282,18 @@ export default function CasesPage() {
                         setForm({ ...form, name: e.target.value })
                       }
                       placeholder="Enter case name"
+                      className="h-11"
                       required
                     />
                   </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="description">Description *</Label>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="description"
+                      className="text-sm font-medium"
+                    >
+                      Description *
+                    </Label>
                     <Textarea
                       id="description"
                       value={form.description}
@@ -282,11 +302,15 @@ export default function CasesPage() {
                       }
                       placeholder="Enter case description"
                       rows={4}
+                      className="resize-none"
                       required
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="user">Assigned User *</Label>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="client" className="text-sm font-medium">
+                      Assigned Client *
+                    </Label>
                     <Select
                       value={form.user_id}
                       onValueChange={(value) =>
@@ -294,72 +318,83 @@ export default function CasesPage() {
                       }
                       required
                     >
-                      <SelectTrigger id="user">
-                        <SelectValue placeholder="Select user" />
+                      <SelectTrigger id="client" className="h-11">
+                        <SelectValue placeholder="Select a client" />
                       </SelectTrigger>
                       <SelectContent>
-                        {users.length === 0 ? (
-                          <SelectItem value="no-users" disabled>
-                            No users available
+                        {clients.length === 0 ? (
+                          <SelectItem value="no-clients" disabled>
+                            No clients available
                           </SelectItem>
                         ) : (
-                          users.map((user) => (
+                          clients.map((client) => (
                             <SelectItem
-                              key={user.id}
-                              value={user.id.toString()}
+                              key={client.id}
+                              value={client.id.toString()}
                             >
-                              {user.name} ({user.email})
+                              {client.full_name}
                             </SelectItem>
                           ))
                         )}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label htmlFor="priority">Priority *</Label>
-                    <Select
-                      value={form.priority}
-                      onValueChange={(value) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          priority: value as Priority,
-                        }))
-                      }
-                    >
-                      <SelectTrigger id="priority">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Low">Low</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="High">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="status">Status *</Label>
-                    <Select
-                      value={form.status}
-                      onValueChange={(value) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          status: value as CaseStatus,
-                        }))
-                      }
-                    >
-                      <SelectTrigger id="status">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="In Progress">In Progress</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        <SelectItem value="Cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="priority" className="text-sm font-medium">
+                        Priority *
+                      </Label>
+                      <Select
+                        value={form.priority}
+                        onValueChange={(value) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            priority: value as Priority,
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="priority" className="h-11">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Low">Low</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="High">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="status" className="text-sm font-medium">
+                        Status *
+                      </Label>
+                      <Select
+                        value={form.status}
+                        onValueChange={(value) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            status: value as CaseStatus,
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="status" className="h-11">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="In Progress">
+                            In Progress
+                          </SelectItem>
+                          <SelectItem value="Completed">Completed</SelectItem>
+                          <SelectItem value="Cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 pt-4">
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
                   <Button
                     type="button"
                     variant="outline"
@@ -373,13 +408,14 @@ export default function CasesPage() {
                         status: "Pending",
                       });
                     }}
+                    className="h-10 px-6"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="bg-black text-white hover:bg-gray-800"
+                    className="bg-black text-white hover:bg-gray-800 h-10 px-6"
                   >
                     {loading ? "Creating..." : "Create Case"}
                   </Button>
@@ -451,7 +487,7 @@ export default function CasesPage() {
                   <TableHead>ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead>Assigned User</TableHead>
+                  <TableHead>Assigned Client</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
@@ -480,7 +516,7 @@ export default function CasesPage() {
                         </p>
                       </TableCell>
                       <TableCell>
-                        {caseItem.user_name || `User #${caseItem.user_id}`}
+                        {caseItem.user_name || `Client #${caseItem.user_id}`}
                       </TableCell>
                       <TableCell>
                         <Badge

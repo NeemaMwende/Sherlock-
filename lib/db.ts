@@ -8,5 +8,9 @@
 // client.connect();
 
 import { neon } from "@neondatabase/serverless";
-const sql = neon(process.env.DATABASE_URL!);
+const sql = neon(process.env.DATABASE_URL!, {
+  fetchOptions: {
+    timeout: 10000,
+  },
+});
 export default sql;
