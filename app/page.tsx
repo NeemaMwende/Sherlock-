@@ -24,6 +24,7 @@ import {
   ArrowRight,
   Star,
 } from "lucide-react";
+import ChatBot from "@/components/ChatBot";
 
 export default function Home() {
   return (
@@ -36,13 +37,22 @@ export default function Home() {
             <span className="text-2xl font-bold text-primary">Sherlock</span>
           </div>
           <div className="hidden md:flex items-center space-x-6">
-            <a href="#features" className="text-gray-600 hover:text-primary transition">
+            <a
+              href="#features"
+              className="text-gray-600 hover:text-primary transition"
+            >
               Features
             </a>
-            <a href="#how-it-works" className="text-gray-600 hover:text-primary transition">
+            <a
+              href="#how-it-works"
+              className="text-gray-600 hover:text-primary transition"
+            >
               How It Works
             </a>
-            <a href="#testimonials" className="text-gray-600 hover:text-primary transition">
+            <a
+              href="#testimonials"
+              className="text-gray-600 hover:text-primary transition"
+            >
               Testimonials
             </a>
           </div>
@@ -130,7 +140,10 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <section
+          id="features"
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20"
+        >
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
               Everything You Need to Manage Your Practice
@@ -168,8 +181,8 @@ export default function Home() {
                 <Users className="h-12 w-12 text-primary mb-4" />
                 <CardTitle>Client Portal</CardTitle>
                 <CardDescription>
-                  Give clients secure access to their case information, documents,
-                  and real-time updates
+                  Give clients secure access to their case information,
+                  documents, and real-time updates
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -179,8 +192,8 @@ export default function Home() {
                 <Clock className="h-12 w-12 text-primary mb-4" />
                 <CardTitle>Automated Workflows</CardTitle>
                 <CardDescription>
-                  Save time with automated case tracking, deadline reminders, and
-                  task management
+                  Save time with automated case tracking, deadline reminders,
+                  and task management
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -201,71 +214,73 @@ export default function Home() {
                 <BarChart3 className="h-12 w-12 text-primary mb-4" />
                 <CardTitle>Analytics & Reporting</CardTitle>
                 <CardDescription>
-                  Make data-driven decisions with comprehensive analytics on case
-                  performance, billing, and productivity
+                  Make data-driven decisions with comprehensive analytics on
+                  case performance, billing, and productivity
                 </CardDescription>
               </CardHeader>
             </Card>
           </div>
         </section>
 
-        {/* How It Works */}
+        {/* How It Works Section */}
         <section id="how-it-works" className="bg-gray-50 py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                Get Started in Minutes
+                How It Works
               </h2>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                Simple setup, powerful results
+                Get started in minutes with our intuitive platform
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center">
-                <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
+                <div className="bg-primary text-white rounded-full h-16 w-16 flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                   1
                 </div>
-                <h3 className="text-xl font-bold mb-3">Create Your Account</h3>
+                <h3 className="text-xl font-semibold mb-2">Create Account</h3>
                 <p className="text-gray-600">
-                  Sign up in seconds and get instant access to your secure
-                  dashboard
+                  Sign up in seconds and set up your firm profile
                 </p>
               </div>
 
               <div className="text-center">
-                <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
+                <div className="bg-primary text-white rounded-full h-16 w-16 flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                   2
                 </div>
-                <h3 className="text-xl font-bold mb-3">Add Your Cases</h3>
+                <h3 className="text-xl font-semibold mb-2">
+                  Import Your Cases
+                </h3>
                 <p className="text-gray-600">
-                  Import existing cases or create new ones with our intuitive
-                  interface
+                  Easily migrate existing cases and documents
                 </p>
               </div>
 
               <div className="text-center">
-                <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
+                <div className="bg-primary text-white rounded-full h-16 w-16 flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                   3
                 </div>
-                <h3 className="text-xl font-bold mb-3">Manage & Grow</h3>
+                <h3 className="text-xl font-semibold mb-2">Start Managing</h3>
                 <p className="text-gray-600">
-                  Track progress, collaborate with your team, and deliver
-                  exceptional results
+                  Collaborate with your team and streamline your workflow
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Testimonials */}
-        <section id="testimonials" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        {/* Testimonials Section */}
+        <section
+          id="testimonials"
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20"
+        >
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Trusted by Legal Professionals
+              Loved by Legal Professionals
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              See what our clients have to say
+              See what our users have to say about Sherlock
             </p>
           </div>
 
@@ -287,7 +302,9 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <p className="font-semibold">Sarah Johnson</p>
-                <p className="text-sm text-gray-600">Partner, Johnson & Associates</p>
+                <p className="text-sm text-gray-600">
+                  Partner, Johnson & Associates
+                </p>
               </CardContent>
             </Card>
 
@@ -308,7 +325,9 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <p className="font-semibold">Michael Chen</p>
-                <p className="text-sm text-gray-600">Managing Partner, Chen Law Firm</p>
+                <p className="text-sm text-gray-600">
+                  Managing Partner, Chen Law Firm
+                </p>
               </CardContent>
             </Card>
 
@@ -483,6 +502,9 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* ChatBot Component */}
+      <ChatBot />
     </div>
   );
 }
