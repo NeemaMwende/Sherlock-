@@ -32,7 +32,7 @@ export default function ChatBot() {
     {
       id: "1",
       role: "assistant",
-      content: "Hi! I'm your legal assistant. How can I help you today?",
+      content: "Hi! I'm your Sherlock assistant. How can I help you today?",
       timestamp: new Date(),
     },
   ]);

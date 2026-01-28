@@ -296,8 +296,9 @@ export default function Home() {
                   ))}
                 </div>
                 <CardDescription className="text-base">
-                  "Sherlock has completely transformed how we manage our cases.
-                  The AI research feature alone has saved us countless hours."
+                  &quot;Sherlock has completely transformed how we manage our
+                  cases. The AI research feature alone has saved us countless
+                  hours.&quot;
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -319,8 +320,8 @@ export default function Home() {
                   ))}
                 </div>
                 <CardDescription className="text-base">
-                  "The security features give us peace of mind, and our clients
-                  love the transparency of the client portal."
+                  &quot; The security features give us peace of mind, and our
+                  clients love the transparency of the client portal.&quot;
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -342,8 +343,8 @@ export default function Home() {
                   ))}
                 </div>
                 <CardDescription className="text-base">
-                  "Best investment we've made for our practice. Intuitive,
-                  powerful, and excellent customer support."
+                  &quot;Best investment we have made for our practice.
+                  Intuitive, powerful, and excellent customer support&quot;
                 </CardDescription>
               </CardHeader>
               <CardContent>
