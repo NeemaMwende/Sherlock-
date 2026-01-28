@@ -1,46 +1,68 @@
-import fs from "fs";
-import path from "path";
-import pdf from "pdf-parse";
-
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { MemoryVectorStore } from "@langchain/vectorstores";
+import { ChatOllama } from "@langchain/ollama";
 import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
-import { Ollama } from "@langchain/community/llms/ollama";
-import { RetrievalQAChain } from "langchain/chains";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { RunnableSequence } from "@langchain/core/runnables";
+import { ChatMessageHistory } from "@langchain/core/memory";
 
-let cachedChain: RetrievalQAChain | null = null;
+type DocumentChunk = {
+  pageContent: string;
+  metadata?: Record<string, any>;
+};
+let cachedChain: RunnableSequence | null = null;
 
 export async function getRagChain() {
-  if (cachedChain) {
-    return cachedChain;
-  }
+  if (cachedChain) return cachedChain;
 
-  //load pdf
-  const filePath = path.join(process.cwd(), "docs/constitution.pdf");
-  const buffer = fs.readFileSync(filePath);
-  const pdfData = await pdf(buffer);
+  // 1️⃣ Load PDF
+  const loader = new PDFLoader("docs/constitution.pdf");
+  const docs = await loader.load();
 
-  // chunk text
+  // 2️⃣ Chunk text
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 500,
     chunkOverlap: 50,
   });
 
-  const chunks = await splitter.splitText(pdfData.text);
+  const chunks = await splitter.splitDocuments(docs);
 
-  // embeddings + vector stores
-  const embeddings = new OllamaEmbeddings({
-    model: "llama3",
-  });
+  // 3️⃣ Embeddings + vector store
+  const embeddings = new OllamaEmbeddings({ model: "llama3" });
+  const vectorStore = await MemoryVectorStore.fromDocuments(chunks, embeddings);
 
-  const vectorStore = await MemoryVectorStore.fromTexts(chunks, {}, embeddings);
-
-  // retriever
   const retriever = vectorStore.asRetriever({ k: 3 });
 
-  // llm + chain
-  const llm = new Ollama({ model: "llama3" });
+  // 4️⃣ Prompt template
+  const prompt = ChatPromptTemplate.fromTemplate(`
+You are a helpful legal assistant.
+Answer ONLY using the context provided.
 
-  cachedChain = RetrievalQAChain.fromLLM(llm, retriever);
+Context:
+{context}
+
+Question:
+{question}
+`);
+
+  // 5️⃣ LLM
+  const memory = new ChatMessageHistory();
+  const llm = new ChatOllama({ model: "llama3", temperature: 0, memory });
+
+  // 6️⃣ Compose chain
+  cachedChain = RunnableSequence.from([
+    {
+      // build context from retriever
+      context: async (input: string) => {
+        const docs = await retriever.invoke(input);
+        return docs.map((d: DocumentChunk) => d.pageContent).join("\n\n");
+      },
+      question: (input: string) => input,
+    },
+    prompt,
+    llm,
+  ]);
+
   return cachedChain;
 }

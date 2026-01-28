@@ -25,6 +25,10 @@ interface Message {
   timestamp: Date;
 }
 
+interface ChatResponse {
+  reply: string;
+}
+
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -65,14 +69,19 @@ export default function ChatBot() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual Ollama API call using LangChain
-      // For now, simulating a response
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) throw new Error("Failed to get response from RAG chain");
+
+      const data: ChatResponse = await res.json();
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: `This is a placeholder response. Integration with Ollama and LangChain will be added here. You asked: "${userMessage.content}"`,
+        content: data.reply,
         timestamp: new Date(),
       };
 
