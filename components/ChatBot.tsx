@@ -17,16 +17,13 @@ import {
   Maximize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { socket } from "@/lib/socket";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
-}
-
-interface ChatResponse {
-  reply: string;
 }
 
 export default function ChatBot() {
@@ -48,12 +45,23 @@ export default function ChatBot() {
   const [userTyping, setUserTyping] = useState(false);
 
   useEffect(() => {
-    socket.on("user:typing", () => setUserTyping(true));
-    socket.on("bot:typing", () => setBotTyping(true));
+    // Connect socket
+    socket.connect();
 
-    socket.on("chat:reply", (reply:string) => {
+    // Socket event listeners
+    socket.on("user:typing", () => {
+      setUserTyping(true);
+      setTimeout(() => setUserTyping(false), 1000);
+    });
+
+    socket.on("bot:typing", () => {
+      setBotTyping(true);
+    });
+
+    socket.on("chat:reply", (reply: string) => {
       setBotTyping(false);
-      setMessagse((prev) => [
+      setIsLoading(false);
+      setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
@@ -64,8 +72,26 @@ export default function ChatBot() {
       ]);
     });
 
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected");
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+    });
+
     return () => {
-      socket.off();
+      socket.off("user:typing");
+      socket.off("bot:typing");
+      socket.off("chat:reply");
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("connect_error");
+      socket.disconnect();
     };
   }, []);
 
@@ -89,34 +115,13 @@ export default function ChatBot() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const messageContent = inputValue;
     setInputValue("");
     setIsLoading(true);
 
     try {
-      // const res = await fetch("/api/chat", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     message: userMessage.content,
-      //     history: messages.map((m) => ({
-      //       role: m.role,
-      //       content: m.content,
-      //     })),
-      //   }),
-      // });
-
-      //if (!res.ok) throw new Error("Failed to get response from RAG chain");
-
-      const data: ChatResponse = await res.json();
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: data.reply,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
+      // Emit message to socket server
+      socket.emit("chat:message", messageContent);
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage: Message = {
@@ -126,7 +131,6 @@ export default function ChatBot() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
-    } finally {
       setIsLoading(false);
     }
   };
