@@ -44,6 +44,30 @@ export default function ChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [botTyping, setBotTyping] = useState(false);
+  const [userTyping, setUserTyping] = useState(false);
+
+  useEffect(() => {
+    socket.on("user:typing", () => setUserTyping(true));
+    socket.on("bot:typing", () => setBotTyping(true));
+
+    socket.on("chat:reply", (reply:string) => {
+      setBotTyping(false);
+      setMessagse((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: reply,
+          timestamp: new Date(),
+        },
+      ]);
+    });
+
+    return () => {
+      socket.off();
+    };
+  }, []);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -69,19 +93,19 @@ export default function ChatBot() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMessage.content,
-          history: messages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
-      });
+      // const res = await fetch("/api/chat", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     message: userMessage.content,
+      //     history: messages.map((m) => ({
+      //       role: m.role,
+      //       content: m.content,
+      //     })),
+      //   }),
+      // });
 
-      if (!res.ok) throw new Error("Failed to get response from RAG chain");
+      //if (!res.ok) throw new Error("Failed to get response from RAG chain");
 
       const data: ChatResponse = await res.json();
 
@@ -105,6 +129,11 @@ export default function ChatBot() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+    socket.emit("user:typing");
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -252,15 +281,17 @@ export default function ChatBot() {
                         </div>
                       </div>
                     ))}
-                    {isLoading && (
+                    {botTyping && (
                       <div className="flex gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="bg-gray-200 text-gray-700">
                             <Bot className="h-4 w-4" />
                           </AvatarFallback>
                         </Avatar>
-                        <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-3">
-                          <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
+                        <div className="bg-gray-100 rounded-2xl px-4 py-2">
+                          <span className="typing-dots">
+                            <span>.</span><span>.</span><span>.</span>
+                          </span>
                         </div>
                       </div>
                     )}
@@ -275,7 +306,7 @@ export default function ChatBot() {
                   <Input
                     placeholder="Type your message..."
                     value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
+                    onChange={handleTyping}
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
                     className="flex-1 bg-white"
