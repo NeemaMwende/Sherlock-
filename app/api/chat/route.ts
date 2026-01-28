@@ -1,33 +1,26 @@
 import { NextResponse } from "next/server";
-import { getRagChain } from "@/lib/rag";
-
-interface ChatRequest {
-  message: string;
-}
+import { runRag } from "@/lib/rag";
 
 export async function POST(req: Request) {
   try {
-    const { message } = (await req.json()) as ChatRequest;
+    const { message } = await req.json();
 
-    if (!message || !message.trim()) {
+    if (!message) {
       return NextResponse.json(
-        { reply: "Please provide a message." },
+        { error: "Message is required" },
         { status: 400 },
       );
     }
 
-    const chain = await getRagChain();
-
-    // Invoke the chain with the user's message
-    const result = await chain.invoke(message);
+    const reply = await runRag(message);
 
     return NextResponse.json({
-      reply: result.content ?? result.text ?? "No response generated.",
+      reply,
     });
   } catch (error) {
-    console.error("Error in /api/chat:", error);
+    console.error("RAG error:", error);
     return NextResponse.json(
-      { reply: "Sorry, something went wrong with the RAG chain." },
+      { error: "Failed to generate response" },
       { status: 500 },
     );
   }

@@ -1,26 +1,22 @@
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { MemoryVectorStore } from "@langchain/vectorstores";
-import { ChatOllama } from "@langchain/ollama";
-import { OllamaEmbeddings } from "@langchain/community/embeddings/ollama";
+import { OllamaEmbeddings, ChatOllama } from "@langchain/ollama";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
-import { ChatMessageHistory } from "@langchain/core/memory";
 
-type DocumentChunk = {
-  pageContent: string;
-  metadata?: Record<string, any>;
+type EmbeddedDoc = {
+  content: string;
+  embedding: number[];
 };
-let cachedChain: RunnableSequence | null = null;
 
-export async function getRagChain() {
-  if (cachedChain) return cachedChain;
+let embeddedDocs: EmbeddedDoc[] | null = null;
 
-  // 1️⃣ Load PDF
+async function embedDocuments(): Promise<EmbeddedDoc[]> {
+  if (embeddedDocs) return embeddedDocs;
+
   const loader = new PDFLoader("docs/constitution.pdf");
   const docs = await loader.load();
 
-  // 2️⃣ Chunk text
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 500,
     chunkOverlap: 50,
@@ -28,41 +24,67 @@ export async function getRagChain() {
 
   const chunks = await splitter.splitDocuments(docs);
 
-  // 3️⃣ Embeddings + vector store
-  const embeddings = new OllamaEmbeddings({ model: "llama3" });
-  const vectorStore = await MemoryVectorStore.fromDocuments(chunks, embeddings);
+  const embedder = new OllamaEmbeddings({
+    model: "llama3",
+  });
 
-  const retriever = vectorStore.asRetriever({ k: 3 });
+  embeddedDocs = await Promise.all(
+    chunks.map(
+      async (doc): Promise<EmbeddedDoc> => ({
+        content: doc.pageContent,
+        embedding: await embedder.embedQuery(doc.pageContent),
+      }),
+    ),
+  );
 
-  // 4️⃣ Prompt template
-  const prompt = ChatPromptTemplate.fromTemplate(`
-You are a helpful legal assistant.
-Answer ONLY using the context provided.
+  return embeddedDocs;
+}
 
-Context:
-{context}
+// cosine similarity
+function similarity(a: number[], b: number[]): number {
+  const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
+  const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
+  const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+  return dot / (magA * magB);
+}
 
-Question:
-{question}
-`);
+export async function runRag(question: string) {
+  const docs = await embedDocuments();
 
-  // 5️⃣ LLM
-  const memory = new ChatMessageHistory();
-  const llm = new ChatOllama({ model: "llama3", temperature: 0, memory });
+  const embedder = new OllamaEmbeddings({ model: "llama3" });
+  const queryEmbedding = await embedder.embedQuery(question);
 
-  // 6️⃣ Compose chain
-  cachedChain = RunnableSequence.from([
-    {
-      // build context from retriever
-      context: async (input: string) => {
-        const docs = await retriever.invoke(input);
-        return docs.map((d: DocumentChunk) => d.pageContent).join("\n\n");
-      },
-      question: (input: string) => input,
-    },
-    prompt,
-    llm,
+  const topDocs = docs
+    .map((d) => ({
+      content: d.content,
+      score: similarity(queryEmbedding, d.embedding),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map((d) => d.content)
+    .join("\n\n");
+
+  const prompt = ChatPromptTemplate.fromMessages([
+    [
+      "system",
+      `You are a legal assistant.
+Answer ONLY using the provided Constitution context.
+If the answer is not found, say you don't know.`,
+    ],
+    ["human", "Context:\n{context}\n\nQuestion:\n{question}"],
   ]);
 
-  return cachedChain;
+  const model = new ChatOllama({
+    model: "llama3",
+    temperature: 0.2,
+  });
+
+  const chain = RunnableSequence.from([prompt, model]);
+
+  const response = await chain.invoke({
+    context: topDocs,
+    question,
+  });
+
+  return response.content;
 }
