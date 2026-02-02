@@ -1,37 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔍 Sherlock
 
-## Getting Started
+Sherlock is a full-stack **Next.js** application with **role-based access control (RBAC)**, secure authentication, and protected dashboards.  
+It’s built with modern security best practices and designed to scale cleanly.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- ⚡ **Next.js (App Router)**
+- 🔐 **Authentication & Authorization**
+  - Role-based access control (Admin & User)
+  - Protected routes and dashboards
+- 🛡️ **Security**
+  - Middleware-level route protection
+  - CSRF protection
+  - Zod schema validation
+  - Rate limiting
+- 🗄️ **Database**
+  - Neon PostgreSQL
+- 📊 **Dashboards**
+  - Admin dashboard
+  - User dashboard
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🏗️ Tech Stack
 
-## Learn More
+- **Frontend:** Next.js, Shadcn-ui
+- **Backend:** Next.js API Routes / Server Actions
+- **Database:** Neon PostgreSQL
+- **Validation:** Zod
+- **Auth & Security:** Middleware, CSRF, Rate Limiting
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📁 ▶️ Running the App (locally)
+- npm install (install requirements.txt dependancies)
+- npm run dev
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open:
+👉 http://localhost:3000
 
-## Deploy on Vercel
+## 🔑 Sample Credentials
+These are demo credentials for local development only.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+👑 Admin User
+- Email: admin@gmail.com
+- Password: 123456789
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# Sherlock-
+👤 Normal User
+- Email: user@sherlock.dev
+- Password: 123456789
+
+🔒 Access Control
+
+Admin
+- Full access to admin dashboard
+- Can manage users and system data
+
+User
+- Access to user dashboard only
+- Restricted from admin routes
+
+Unauthorized access attempts are blocked at the middleware level.
